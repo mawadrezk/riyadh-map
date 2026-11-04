@@ -1,5 +1,6 @@
 
 # 🗺️ خريطة أسعار الرياض - Riyadh Map
+<img width="1583" height="824" alt="WhatsApp Image 2026-11-04 at 11 58 50 AM" src="https://github.com/user-attachments/assets/39e09992-5dcf-475f-9397-d6acc4060774" />
 
 > مشروع تفاعلي لعرض خريطة مدينة الرياض مع البيانات العقارية والأسعار
 > ![خريطة أسعار الرياض](https://mawadrezk.github.io/riyadh-map/preview.png).
