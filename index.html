@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>خريطة أسعار الرياض</title>
+  <title>خريطة أسعار الرياض - محمد عوض</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     body { margin: 0; padding: 0; font-family: Tahoma, sans-serif; }
@@ -47,15 +47,12 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // 1- إنشاء الخريطة ومركزها الرياض
     const map = L.map('map').setView([24.7136, 46.6753], 11);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap | Mohamed Awad' }).addTo(map);
 
-    // 2- دالة اختيار اللون حسب السعر
     function getColor(price) {
       return price > 5000 ? '#d73027' : price > 3500 ? '#fc8d59' : price > 2000 ? '#fee08b' : '#91cf60';
     }
-    // 3- شكل الحي (لون + حدود)
     function styleFeature(feature) {
       return { fillColor: getColor(feature.properties.price_m2), weight: 1, color: '#ffffff', fillOpacity: 0.7 };
     }
@@ -64,41 +61,34 @@
     const searchBox = document.getElementById('searchBox');
     const suggestions = document.getElementById('suggestions');
 
-    // 4- تحميل ملف الأحياء
     fetch('districts.geojson').then(r=>r.json()).then(data=>{
-      // 5- نعمل أسعار وهمية للتجربة
       data.features.forEach(f=>{
         const fakePrice = 1500 + (parseInt(f.properties.district_id||Math.random()*100) % 20) * 250 + Math.floor(Math.random()*500);
         f.properties.price_m2 = fakePrice;
       });
 
-      // 6- فلترة الرياض فقط (بالإحداثيات + الاسم)
       const riyadhBounds = { minLat: 24.3, maxLat: 25.1, minLng: 46.3, maxLng: 47.2 };
       let riyadhFeatures = data.features.filter(f => {
         const cityName = (f.properties.city_name || f.properties.city || '').toString();
         const byName = cityName.includes('الرياض') || cityName.toLowerCase().includes('riyadh');
         if(byName) return true;
         try {
-          // نجيب أول إحداثي للحي ونشوفه داخل مربع الرياض ولا لا
           let coords = f.geometry.coordinates;
-          // لو Polygon متعدد
           if(f.geometry.type === 'Polygon') coords = coords[0];
           else if(f.geometry.type === 'MultiPolygon') coords = coords[0][0];
           const lng = coords[0][0]; const lat = coords[0][1];
           return lat >= riyadhBounds.minLat && lat <= riyadhBounds.maxLat && lng >= riyadhBounds.minLng && lng <= riyadhBounds.maxLng;
         } catch(e){ return false; }
       });
-      console.log(`فلتر الرياض: ${riyadhFeatures.length} من ${data.features.length}`);
       if(riyadhFeatures.length > 20) data.features = riyadhFeatures;
 
       allData = data;
 
-      // 7- رسم الأحياء
       geoLayer = L.geoJSON(data, {
         style: styleFeature,
         onEachFeature: (feature, layer) => {
           const name = feature.properties.name_ar || feature.properties.name_en || 'حي';
-          layer.bindPopup(`<b>${name}</b><br>سعر المتر: ${feature.properties.price_m2} ريال<br>المعرف: ${feature.properties.district_id}`);
+          layer.bindPopup(`<b>${name}</b><br>سعر المتر: ${feature.properties.price_m2} ريال`);
         }
       }).addTo(map);
       map.fitBounds(geoLayer.getBounds());
@@ -106,7 +96,6 @@
       setupSearch();
     });
 
-    // 8- فلتر السعر
     document.getElementById('priceFilter').addEventListener('input', e => {
       const maxPrice = +e.target.value;
       document.getElementById('priceValue').textContent = maxPrice;
@@ -115,7 +104,6 @@
       geoLayer.clearLayers(); geoLayer.addData(filtered);
     });
 
-    // 9- إعداد البحث الذكي
     function setupSearch(){
       searchBox.addEventListener('input', ()=>{
         const q = searchBox.value.trim();
@@ -143,7 +131,6 @@
       document.addEventListener('click', (e)=>{ if(!e.target.closest('.search-wrapper')) suggestions.style.display='none'; });
     }
 
-    // 10- فلتر حي واحد + زووم
     function filterToDistrict(feature){
       geoLayer.clearLayers(); geoLayer.addData(feature);
       const bounds = L.geoJSON(feature).getBounds();
@@ -151,7 +138,6 @@
       setTimeout(()=>{ geoLayer.eachLayer(l=>{ l.openPopup(); }); },300);
     }
 
-    // 11- زر عرض الكل
     document.getElementById('resetBtn').onclick = ()=>{
       searchBox.value=''; suggestions.style.display='none';
       document.getElementById('priceFilter').value=10000;
@@ -160,37 +146,28 @@
       map.fitBounds(geoLayer.getBounds());
     };
 
-    // 12- زر موقعي الجديد - يجيب مكانك الحالي
     document.getElementById('locateBtn').onclick = ()=>{
-      if(!navigator.geolocation){
-        alert("المتصفح لا يدعم تحديد الموقع");
-        return;
-      }
+      if(!navigator.geolocation){ alert("المتصفح لا يدعم تحديد الموقع"); return; }
       const btn = document.getElementById('locateBtn');
       btn.textContent = "⏳ جاري...";
       navigator.geolocation.getCurrentPosition(pos=>{
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
+        const lat = pos.coords.latitude; const lng = pos.coords.longitude;
         btn.textContent = "📍 موقعي";
-        // امسح الماركر القديم لو فيه
         if(userMarker) map.removeLayer(userMarker);
-        // 13- إضافة ماركر لمكانك
         userMarker = L.marker([lat,lng]).addTo(map).bindPopup("📍 أنت هنا").openPopup();
-        // 14- إضافة دائرة شفافة حولك
         L.circle([lat,lng], {radius: 500, color: '#2e7d32', fillOpacity: 0.15}).addTo(map);
         map.setView([lat,lng], 15);
       }, err=>{
         btn.textContent = "📍 موقعي";
-        alert("لم نستطع تحديد موقعك: " + err.message + "\nتأكد انك مفعل الـ GPS");
+        alert("لم نستطع تحديد موقعك: " + err.message);
       });
     };
 
-    // 15- إنشاء المفتاح المصحح
     function createLegend(){
       const grades = [
         {label: '< 2000 رخيص', min: 0, max: 2000, color: '#91cf60'},
-        {label: '2000 - 3500', min: 2000, max: 3500, color: '#fee08b'},
-        {label: '3500 - 5000', min: 3500, max: 5000, color: '#fc8d59'},
+        {label: '2000 - 3500 متوسط', min: 2000, max: 3500, color: '#fee08b'},
+        {label: '3500 - 5000 مرتفع', min: 3500, max: 5000, color: '#fc8d59'},
         {label: '> 5000 غالي', min: 5000, max: 10000, color: '#d73027'},
       ];
       const div = document.getElementById('legend');
@@ -204,10 +181,6 @@
         };
         div.appendChild(item);
       });
-      const allItem = document.createElement('div');
-      allItem.innerHTML = `<b style="color:#0b57d0; border-top:1px solid #ddd; display:block; margin-top:6px; padding-top:4px; cursor:pointer;">عرض الكل</b>`;
-      allItem.onclick = ()=>{ geoLayer.clearLayers(); geoLayer.addData(allData); map.fitBounds(geoLayer.getBounds()); };
-      div.appendChild(allItem);
     }
   </script>
 </body>
