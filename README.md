@@ -1,14 +1,34 @@
-# خريطة أسعار أحياء الرياض 🗺️
+# 🗺️ خريطة أسعار الرياض - Riyadh Map
 
-خريطة تفاعلية توضح متوسط سعر المتر في أحياء الرياض
-### 🧪 تجربة Branch جديد.
+> مشروع تفاعلي لعرض خريطة مدينة الرياض مع البيانات العقارية والأسعار.
 
-### 🔗 الموقع لايف:
-https://mawadrezk.github.io/riyadh-map/
+🔗 **Live Demo:** https://mawadrezk.github.io/riyadh-map/
+
+![Map Preview](https://img.shields.io/badge/Status-Live-green) ![GitHub Pages](https://img.shields.io/badge/Deployed-GitHub%20Pages-blue)
 
 ### ✨ المميزات
-- تلوين الأحياء حسب السعر
-- فلتر سعر
-- بحث عن الحي
+- 🗺️ خريطة تفاعلية لمدينة الرياض
+- 📍 عرض الأحياء والمناطق
+- 💰 عرض متوسط أسعار المتر
+- 📱 متجاوب مع الجوال والكمبيوتر
+- ⚡ سريع وخفيف
 
-Made by mohamed Mawad Rezk
+### 🛠️ التقنيات المستخدمة
+- HTML5 / CSS3 / JavaScript
+- Leaflet.js / Mapbox للخرائط
+- GitHub Pages للاستضافة
+- Git & GitHub لإدارة الإصدارات
+
+### 🚀 التشغيل محلياً
+```bash
+git clone https://github.com/mawadrezk/riyadh-map.git
+cd riyadh-map
+# افتح index.html في المتصفح📂 هيكل المشروعjavascriptriyadh-map/
+├── index.html
+├── style.css
+├── script.js
+└── README.md🗺️ خريطة الطريق
+إنشاء الخريطة الأساسيةرفع المشروع على GitHub Pagesإضافة فلتر بحث للأحياءإضافة ألوان حسب متوسط السعرلوحة تحكم للإحصائيات👨‍💻 المطور
+Mohamed
+awad Rezk - GitHub
+⭐ لو عجبك المشروع اعمله Star!
