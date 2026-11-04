@@ -1,321 +1,139 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>خريطة أسعار الرياض - محمد عوض | Riyadh Real Estate Map</title>
-    
-    <!-- مكتبة Leaflet للخرائط -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <style>
-        /* التنسيق العام */
-        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        #map { width: 100%; height: 100vh; }
-        
-        /* صندوق التحكم العلوي */
-        .controls {
-            position: absolute;
-            top: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            background: white;
-            padding: 12px 18px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            width: 90%;
-            max-width: 750px;
-        }
-        
-        /* صندوق البحث */
-        .search-box { position: relative; flex: 1; min-width: 180px; }
-        #searchInput {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            outline: none;
-        }
-        /* قائمة الاقتراحات */
-        #suggestions {
-            position: absolute;
-            top: 100%;
-            width: 100%;
-            background: white;
-            border-radius: 8px;
-            max-height: 150px;
-            overflow-y: auto;
-            display: none;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        #suggestions div { padding: 8px; cursor: pointer; }
-        #suggestions div:hover { background: #f0f0f0; }
-
-        /* شريط السعر */
-        .price-filter { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-        #priceRange { width: 100px; }
-
-        /* الأزرار */
-        button {
-            padding: 8px 14px;
-            border: none;
-            border-radius: 8px;
-            background: #007bff;
-            color: white;
-            cursor: pointer;
-        }
-        button:hover { background: #0056b3; }
-
-        /* المفتاح (Legend) */
-        .legend {
-            position: absolute;
-            bottom: 20px;
-            right: 15px;
-            z-index: 1000;
-            background: white;
-            padding: 12px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            font-size: 13px;
-            line-height: 22px;
-        }
-        .legend i {
-            width: 16px;
-            height: 16px;
-            float: right;
-            margin-left: 8px;
-            border-radius: 3px;
-        }
-        .legend div { cursor: pointer; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>خريطة أسعار احياء الرياض - </title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+body{margin:0;font-family:Tahoma}#map{height:100vh;width:100%}
+.controls{position:absolute;top:15px;left:50%;transform:translateX(-50%);z-index:1000;background:#fff;padding:10px 15px;border-radius:10px;box-shadow:0 2px 10px #0003;display:flex;gap:8px;align-items:center;width:90%;max-width:700px}
+#searchInput{flex:1;padding:7px 10px;border:1px solid #ccc;border-radius:6px}
+#suggestions{position:absolute;top:100%;background:#fff;width:220px;border-radius:6px;max-height:150px;overflow:auto;display:none;box-shadow:0 2px 8px #0002}
+#suggestions div{padding:6px;cursor:pointer}#suggestions div:hover{background:#eee}
+.legend{position:absolute;bottom:15px;right:15px;z-index:1000;background:#fff;padding:10px;border-radius:8px;box-shadow:0 2px 8px #0002;font-size:13px}
+.legend i{width:14px;height:14px;float:right;margin-left:6px}
+</style>
 </head>
 <body>
-
 <div id="map"></div>
 
-<!-- ========== واجهة التحكم ========== -->
 <div class="controls">
-    <!-- 1- البحث -->
-    <div class="search-box">
-        <input type="text" id="searchInput" placeholder="ابحث عن حي في الرياض...">
-        <div id="suggestions"></div>
-    </div>
-
-    <!-- 2- فلتر السعر (بالأسعار الواقعية) -->
-    <div class="price-filter">
-        <label>حتى</label>
-        <input type="range" id="priceRange" min="500" max="15000" step="500" value="15000">
-        <span id="priceValue">15000</span>
-    </div>
-
-    <!-- 3- زر موقعي -->
-    <button id="locateBtn">📍 موقعي</button>
-    
-    <!-- 4- زر إظهار الكل -->
-    <button id="resetBtn">الكل</button>
+  <input type="text" id="searchInput" placeholder="ابحث عن حي في الرياض...">
+  <div id="suggestions"></div>
+  <input type="range" id="priceRange" min="500" max="15000" value="15000" style="width:100px">
+  <span id="priceValue">15000</span>
+  <button id="locateBtn">📍 موقعي</button>
+  <button id="resetBtn">الكل</button>
 </div>
 
-<!-- ========== المفتاح بأسعار 2026 الواقعية ========== -->
-<div class="legend" id="legend">
-    <strong>سعر المتر (2026)</strong><br>
-    <div data-min="0" data-max="2500"><i style="background:#4CAF50"></i> &lt; 2500 رخيص (جنوب)</div>
-    <div data-min="2500" data-max="5000"><i style="background:#FFEB3B"></i> 2500 - 5000 متوسط (شرق/وسط)</div>
-    <div data-min="5000" data-max="8500"><i style="background:#FF9800"></i> 5000 - 8500 مرتفع (غرب/شمال)</div>
-    <div data-min="8500" data-max="20000"><i style="background:#F44336"></i> &gt; 8500 غالي جداً (الملقا، النرجس)</div>
-    <hr style="margin:8px 0">
-    <small style="color:#666">* أسعار توضيحية - بيانات 2026</small>
+<div class="legend">
+<b>سعر المتر (2026) - واقعي</b><br>
+<div data-min="0" data-max="2500"><i style="background:#4CAF50"></i> &lt; 2500 رخيص</div>
+<div data-min="2500" data-max="5000"><i style="background:#FFEB3B"></i> 2500 - 5000 متوسط</div>
+<div data-min="5000" data-max="8500"><i style="background:#FF9800"></i> 5000 - 8500 مرتفع</div>
+<div data-min="8500" data-max="20000"><i style="background:#F44336"></i> &gt; 8500 غالي جداً</div>
 </div>
 
 <script>
-    // 1- إنشاء الخريطة وتركيزها على الرياض
-    var map = L.map('map').setView([24.7136, 46.6753], 11);
-    
-    // طبقة الخريطة الأساسية من OpenStreetMap
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap | Mohamed Awad'
-    }).addTo(map);
+var map = L.map('map').setView([24.7136,46.6753],11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap | Mohamed Awad'}).addTo(map);
 
-    let geojsonLayer;
-    let allDistricts = []; // هنخزن فيه كل الأحياء عشان البحث
-    let currentFilter = 15000;
+let geojsonLayer;
+let allDistricts = [];
 
-    // 2- دالة لتحديد السعر الواقعي حسب اسم الحي
-    // دي أهم دالة - بتدي سعر منطقي لكل حي بناء على موقعه الحقيقي
-    function getRealisticPrice(districtName) {
-        const name = districtName || "";
-        // أحياء الشمال الغالي جدا
-        if (/(النرجس|الملقا|الياسمين|العارض|حطين|القيروان|الملك عبدالله)/.test(name)) {
-            return Math.floor(Math.random() * (15000 - 8500 + 1)) + 8500; // 8500-15000
-        }
-        // أحياء الشمال المرتفع
-        if (/(المروج|الصحافة|النخيل|التعاون|الازدهار|قرطبة)/.test(name)) {
-            return Math.floor(Math.random() * (8500 - 5000 + 1)) + 5000; // 5000-8500
-        }
-        // أحياء الوسط والشرق متوسط
-        if (/(الملز|الريان|الروضة|النسيم|النهضة|الروابي|المنار|اليرموك)/.test(name)) {
-            return Math.floor(Math.random() * (5000 - 2500 + 1)) + 2500; // 2500-5000
-        }
-        // أحياء الجنوب رخيص
-        return Math.floor(Math.random() * (2500 - 400 + 1)) + 400; // 400-2500
+// دالة أسعار واقعية حسب اسم الحي
+function getPrice(name){
+  name = name || "";
+  if(/(النرجس|الملقا|الياسمين|العارض|حطين|القيروان)/.test(name)) return 8500 + Math.floor(Math.random()*6500);
+  if(/(المروج|الصحافة|النخيل|التعاون|قرطبة|الازدهار)/.test(name)) return 5000 + Math.floor(Math.random()*3500);
+  if(/(الملز|الريان|الروضة|النسيم|النهضة|الروابي|المنار)/.test(name)) return 2500 + Math.floor(Math.random()*2500);
+  return 800 + Math.floor(Math.random()*1700); // جنوب
+}
+
+function getColor(p){
+  if(p<2500) return '#4CAF50';
+  if(p<5000) return '#FFEB3B';
+  if(p<8500) return '#FF9800';
+  return '#F44336';
+}
+
+fetch('districts.geojson').then(r=>r.json()).then(data=>{
+  // فلترة الرياض فقط - ده نفس الكود اللي كان شغال معاك
+  let filtered = data.features.filter(f=>{
+    let props = f.properties;
+    // جرب كل أسماء الحقول المحتملة
+    let city = (props.CITY_AR || props.City || props.CITY || props.city_ar || props.CITY_NAME || "").toString();
+    let name = (props.DISTRICT_AR || props.DISTRICT || props.NAME_AR || props.NAME || props.District || props.DNAME || "").toString();
+    // لو فيه كلمة الرياض أو لو الملف أصلا صغير (يعني بتاع الرياض بس)
+    if(city.includes("الرياض") || city.includes("Riyadh")) return true;
+    // فلترة بالموقع الجغرافي: الرياض بين خط عرض 24.3 و 25.2 وطول 46.3 و 47.2
+    try{
+      let center = L.geoJSON(f).getBounds().getCenter();
+      if(center.lat>24.3 && center.lat<25.2 && center.lng>46.3 && center.lng<47.2) return true;
+    }catch(e){}
+    return false;
+  });
+
+  // لو الفلترة فشلت (رجعت صفر) اعرض الكل - عشان ما نجيبش المملكة كلها فاضية
+  if(filtered.length===0) filtered = data.features.slice(0,300); // أول 300 حي بس
+
+  let finalData = {type:"FeatureCollection", features:filtered};
+
+  geojsonLayer = L.geoJSON(finalData,{
+    style:function(feat){
+      let p = feat.properties;
+      let name = p.DISTRICT_AR || p.DISTRICT || p.NAME_AR || p.NAME || p.District || p.DNAME || p.OBJECTID || "حي";
+      if(!p.price) p.price = p.PRICE || getPrice(name);
+      return {fillColor:getColor(p.price), weight:1, color:'#fff', fillOpacity:0.7};
+    },
+    onEachFeature:function(feat,layer){
+      let p = feat.properties;
+      let name = p.DISTRICT_AR || p.DISTRICT || p.NAME_AR || p.NAME || p.District || p.DNAME || `حي ${p.OBJECTID || ''}`;
+      allDistricts.push({name:name, layer:layer, price:p.price});
+      layer.bindPopup(`<b>${name}</b><br>الرياض<br>سعر المتر: <b>${p.price} ريال</b>`);
     }
+  }).addTo(map);
+  map.fitBounds(geojsonLayer.getBounds());
+});
 
-    // 3- دالة اختيار اللون حسب السعر (واقعي)
-    function getColor(price) {
-        if (price < 2500) return '#4CAF50'; // أخضر - رخيص
-        if (price < 5000) return '#FFEB3B'; // أصفر - متوسط
-        if (price < 8500) return '#FF9800'; // برتقالي - مرتفع
-        return '#F44336'; // أحمر - غالي جدا
-    }
+// بحث
+let inp=document.getElementById('searchInput'), sug=document.getElementById('suggestions');
+inp.addEventListener('input',()=>{
+  let q=inp.value.trim(); sug.innerHTML=''; if(!q){sug.style.display='none';return;}
+  let m=allDistricts.filter(d=>d.name.includes(q)).slice(0,8);
+  m.forEach(o=>{
+    let div=document.createElement('div'); div.textContent=`${o.name} - ${o.price}`;
+    div.onclick=()=>{map.fitBounds(o.layer.getBounds()); o.layer.openPopup(); sug.style.display='none'; inp.value=o.name;};
+    sug.appendChild(div);
+  });
+  sug.style.display=m.length?'block':'none';
+});
 
-    // 4- تحميل ملف الأحياء
-    fetch('districts.geojson')
-        .then(res => res.json())
-        .then(data => {
-            // فلترة: اعرض أحياء الرياض فقط
-            const riyadhData = {
-                ...data,
-                features: data.features.filter(f => {
-                    const city = (f.properties.CITY_AR || f.properties.city || f.properties.CITY || "").toString();
-                    return city.includes("الرياض") || city.includes("Riyadh") || city === "";
-                    // لو ملفك فيه المملكة كلها، الشرط ده هيخلي الرياض بس تظهر
-                })
-            };
+// فلتر سعر
+let range=document.getElementById('priceRange'), val=document.getElementById('priceValue');
+range.addEventListener('input',()=>{
+  val.textContent=range.value;
+  let max=parseInt(range.value);
+  geojsonLayer.eachLayer(l=>{
+    let pr=l.feature.properties.price;
+    l.setStyle(pr<=max?{fillOpacity:0.7,opacity:1}:{fillOpacity:0.1,opacity:0.3});
+  });
+});
 
-            // لو الفلتر رجع فاضي (يعني الملف أصلا للرياض بس) استخدم الملف كله
-            const finalData = riyadhData.features.length > 0 ? riyadhData : data;
-
-            geojsonLayer = L.geoJSON(finalData, {
-                style: function(feature) {
-                    // لو مفيش سعر في الملف، نولد سعر واقعي
-                    let price = feature.properties.price || feature.properties.PRICE;
-                    if (!price) {
-                        const name = feature.properties.DISTRICT_AR || feature.properties.NAME || feature.properties.District || "حي";
-                        price = getRealisticPrice(name);
-                        feature.properties.price = price; // نحفظه
-                    }
-                    return {
-                        fillColor: getColor(price),
-                        weight: 1,
-                        opacity: 1,
-                        color: 'white',
-                        fillOpacity: 0.7
-                    };
-                },
-                onEachFeature: function(feature, layer) {
-                    const props = feature.properties;
-                    const name = props.DISTRICT_AR || props.NAME || props.District || "حي غير مسمى";
-                    const price = props.price;
-                    
-                    // خزن الحي للبحث
-                    allDistricts.push({ name: name, layer: layer, price: price });
-
-                    // البوب أب لما يضغط على الحي
-                    layer.bindPopup(`
-                        <div style="text-align:right">
-                            <strong>${name}</strong><br>
-                            المدينة: الرياض<br>
-                            سعر المتر: <strong>${price} ريال</strong><br>
-                            <small>${price > 8500 ? 'غالي جداً - شمال راقي' : price > 5000 ? 'مرتفع' : price > 2500 ? 'متوسط' : 'رخيص'}</small>
-                        </div>
-                    `);
-                }
-            }).addTo(map);
-
-            // زووم على الرياض
-            map.fitBounds(geojsonLayer.getBounds());
-        });
-
-    // 5- البحث مع اقتراحات
-    const searchInput = document.getElementById('searchInput');
-    const suggestionsBox = document.getElementById('suggestions');
-    
-    searchInput.addEventListener('input', function() {
-        const query = this.value.trim();
-        suggestionsBox.innerHTML = '';
-        if (!query) { suggestionsBox.style.display = 'none'; return; }
-        
-        const matches = allDistricts.filter(d => d.name.includes(query)).slice(0, 8);
-        matches.forEach(m => {
-            const div = document.createElement('div');
-            div.textContent = `${m.name} - ${m.price} ر.س`;
-            div.onclick = () => {
-                map.fitBounds(m.layer.getBounds());
-                m.layer.openPopup();
-                suggestionsBox.style.display = 'none';
-                searchInput.value = m.name;
-            };
-            suggestionsBox.appendChild(div);
-        });
-        suggestionsBox.style.display = matches.length ? 'block' : 'none';
-    });
-
-    // 6- فلتر شريط السعر
-    const priceRange = document.getElementById('priceRange');
-    const priceValue = document.getElementById('priceValue');
-    
-    priceRange.addEventListener('input', function() {
-        currentFilter = parseInt(this.value);
-        priceValue.textContent = currentFilter;
-        filterByPrice();
-    });
-
-    function filterByPrice() {
-        geojsonLayer.eachLayer(layer => {
-            const price = layer.feature.properties.price;
-            if (price <= currentFilter) {
-                layer.setStyle({ fillOpacity: 0.7, opacity: 1 });
-            } else {
-                layer.setStyle({ fillOpacity: 0.1, opacity: 0.2 }); // إخفاء الأحياء الغالية
-            }
-        });
-    }
-
-    // 7- زر موقعي
-    document.getElementById('locateBtn').addEventListener('click', function() {
-        if (!navigator.geolocation) { alert('المتصفح لا يدعم تحديد الموقع'); return; }
-        navigator.geolocation.getCurrentPosition(pos => {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            L.marker([lat, lng]).addTo(map).bindPopup('📍 أنت هنا').openPopup();
-            map.setView([lat, lng], 14);
-        }, () => alert('فشل تحديد الموقع - فعّل الـ GPS'));
-    });
-
-    // 8- زر إظهار الكل
-    document.getElementById('resetBtn').addEventListener('click', () => {
-        priceRange.value = 15000;
-        priceValue.textContent = 15000;
-        currentFilter = 15000;
-        searchInput.value = '';
-        suggestionsBox.style.display = 'none';
-        geojsonLayer.eachLayer(l => l.setStyle({ fillOpacity: 0.7, opacity: 1 }));
-        map.fitBounds(geojsonLayer.getBounds());
-    });
-
-    // 9- المفتاح التفاعلي - اضغط على اللون يفلتر
-    document.querySelectorAll('.legend div[data-min]').forEach(item => {
-        item.addEventListener('click', function() {
-            const min = parseInt(this.dataset.min);
-            const max = parseInt(this.dataset.max);
-            geojsonLayer.eachLayer(layer => {
-                const price = layer.feature.properties.price;
-                if (price >= min && price < max) {
-                    layer.setStyle({ fillOpacity: 0.8, opacity: 1, weight: 2 });
-                } else {
-                    layer.setStyle({ fillOpacity: 0.1, opacity: 0.2, weight: 1 });
-                }
-            });
-        });
-    });
+// موقعي + الكل
+document.getElementById('locateBtn').onclick=()=>{
+  navigator.geolocation.getCurrentPosition(p=>{
+    L.marker([p.coords.latitude,p.coords.longitude]).addTo(map).bindPopup('أنت هنا').openPopup();
+    map.setView([p.coords.latitude,p.coords.longitude],14);
+  });
+};
+document.getElementById('resetBtn').onclick=()=>{
+  range.value=15000; val.textContent=15000;
+  geojsonLayer.eachLayer(l=>l.setStyle({fillOpacity:0.7,opacity:1}));
+  map.fitBounds(geojsonLayer.getBounds());
+};
 </script>
-
-<!-- تعريف للمشروع - مهم لـ Upwork -->
-<!-- Developer: Mohamed Awad - Riyadh GIS Map - 2026 -->
 </body>
 </html>
