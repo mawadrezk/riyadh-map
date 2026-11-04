@@ -4,207 +4,73 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>خريطة أسعار الرياض</title>
-  
-  <!-- 1- مكتبة Leaflet الأساسية للخرائط -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
   <style>
-    /* إزالة الهوامش عشان الخريطة تملا الشاشة */
     body { margin: 0; padding: 0; font-family: Tahoma, sans-serif; }
     #map { height: 100vh; width: 100%; }
-    
-    /* صندوق التحكم اللي فوق (فلتر وبـحث) */
-    .controls {
-      position: absolute; top: 10px; left: 50px; z-index: 1000;
-      background: white; padding: 12px; border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-    }
-    .controls input[type="text"] { padding: 6px; border-radius: 4px; border: 1px solid #ccc; }
-    
-    /* صندوق المفتاح (Legend) اللي تحت */
-    .legend {
-      position: absolute; bottom: 20px; right: 20px; z-index: 1000;
-      background: white; padding: 12px; border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      line-height: 24px;
-    }
-    .legend div { cursor: pointer; margin: 4px 0; }
-    .legend div:hover { background: #f0f0f0; }
+    .controls { position: absolute; top: 10px; left: 50px; z-index: 1000; background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; width: 380px; }
+    .search-wrapper { position: relative; flex: 1; }
+    #searchBox { width: 100%; padding: 7px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; }
+    #suggestions { position: absolute; top: 36px; left: 0; right: 0; background: white; border-radius: 6px; max-height: 220px; overflow-y: auto; display: none; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: 1px solid #eee; }
+    .suggest-item { padding: 9px 10px; cursor: pointer; border-bottom: 1px solid #f5f5f5; }
+    .suggest-item:hover { background: #f0f7ff; }
+    .legend { position: absolute; bottom: 20px; right: 20px; z-index: 1000; background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
   </style>
 </head>
 <body>
-
   <div id="map"></div>
-
-  <!-- أدوات التحكم -->
   <div class="controls">
     <label>فلتر السعر: <span id="priceValue">10000</span></label>
     <input type="range" id="priceFilter" min="0" max="10000" value="10000" step="100">
-    <input type="text" id="searchBox" placeholder="ابحث عن حي...">
+    <div class="search-wrapper"><input type="text" id="searchBox" placeholder="ابحث عن حي..."><div id="suggestions"></div></div>
+    <button id="resetBtn" style="padding:6px 10px; border:none; background:#eef5ff; color:#0b57d0; border-radius:6px; cursor:pointer; font-weight:bold;">عرض الكل</button>
   </div>
-
-  <!-- مكان المفتاح -->
   <div id="legend" class="legend"></div>
-
-  <!-- ملفات Leaflet -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
   <script>
-    // 2- إنشاء الخريطة وتحديد مكان البداية (الرياض)
+    // 1- إنشاء الخريطة - مركزها الرياض
     const map = L.map('map').setView([24.7136, 46.6753], 11);
-    
-    // 3- إضافة خلفية الخريطة من OpenStreetMap
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
-
-    // 4- دالة اختيار اللون حسب السعر
-    function getColor(price) {
-      return price > 5000 ? '#d73027' : // أحمر غالي
-             price > 3500 ? '#fc8d59' : // برتقالي متوسط غالي
-             price > 2000 ? '#fee08b' : // أصفر متوسط
-                            '#91cf60';  // أخضر رخيص
-    }
-
-    // 5- دالة تنسيق شكل الحي (الحدود والشفافية)
-    function styleFeature(feature) {
-      return {
-        fillColor: getColor(feature.properties.price_m2), // لون التعبئة حسب السعر
-        weight: 1,          // سمك الحدود
-        color: '#ffffff',   // لون الحدود أبيض
-        fillOpacity: 0.7    // شفافية اللون
-      };
-    }
-
-    let geoLayer, allData; // متغيرات هنحتاجها في الفلتر والبحث
-
-    // 6- تحميل ملف الأحياء
-    fetch('districts.geojson')
-      .then(response => response.json())
-      .then(data => {
-        
-        // 7- بما إن ملفك مفهوش أسعار، هنعمل أسعار وهمية للتجربة
-        // بعدين تقدر تستبدلها بأسعار حقيقية
-        data.features.forEach(f => {
-          // نعمل سعر عشوائي بين 1500 و 7000 حسب رقم الحي
-          const fakePrice = 1500 + (parseInt(f.properties.district_id) % 20) * 250 + Math.floor(Math.random()*500);
-          f.properties.price_m2 = fakePrice;
-        });
-
-
-
-        // --- فلتر الرياض فقط ---
-// 1 = الرياض في ملفك، لو مطلعش حاجة جرب 3 أو 8
-const RIYADH_CITY_ID = 1; 
-const originalCount = data.features.length;
-
-// نحتفظ بس بأحياء الرياض
-let riyadhOnly = data.features.filter(f => f.properties.city_id == RIYADH_CITY_ID);
-
-// لو الفلتر طلع فاضي، نرجع نعرض الكل مؤقتا عشان الخريطة متفضاش
-if (riyadhOnly.length > 0) {
-  data.features = riyadhOnly;
-  console.log(`تم فلترة ${originalCount} حي -> ${riyadhOnly.length} حي في الرياض فقط`);
-} else {
-  console.log(`city_id = ${RIYADH_CITY_ID} مطلعش نتائج، اعرض كل المدن مؤقتا`);
-  // اطبع كل الـ city_id الموجودة عشان تعرف رقم الرياض
-  const allCityIds = [...new Set(data.features.map(f => f.properties.city_id))];
-  console.log("كل الـ city_id الموجودة:", allCityIds);
-}
-
-        allData = data; // نحفظ البيانات الأصلية
-
-        // 8- رسم الأحياء على الخريطة
-        geoLayer = L.geoJSON(data, {
-          style: styleFeature,
-          onEachFeature: (feature, layer) => {
-            // 9- لما تدوس على الحي يطلع اسم الحي وسعر المتر
-            const name = feature.properties.name_ar || feature.properties.name_en;
-            const price = feature.properties.price_m2;
-            layer.bindPopup(`<b>${name}</b><br>سعر المتر: ${price} ريال<br>رقم الحي: ${feature.properties.district_id}`);
-          }
-        }).addTo(map);
-
-        // 10- نقرب الخريطة على كل الأحياء
-        map.fitBounds(geoLayer.getBounds());
-        
-        // 11- ننشئ المفتاح
-        createLegend();
-      });
-
-    // 12- فلتر السعر (لما تحرك الشريط)
-    document.getElementById('priceFilter').addEventListener('input', e => {
-      const maxPrice = +e.target.value; // القيمة اللي اختارها المستخدم
-      document.getElementById('priceValue').textContent = maxPrice;
-      if (!geoLayer) return;
-
-      geoLayer.clearLayers(); // نمسح القديم
-      // نفلتر الأحياء اللي سعرها أقل من القيمة
-      const filtered = {
-        ...allData,
-        features: allData.features.filter(f => f.properties.price_m2 <= maxPrice)
-      };
-      geoLayer.addData(filtered); // نرسم الجديد
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+    // 2- دالة اختيار اللون حسب السعر
+    function getColor(price) { return price > 5000 ? '#d73027' : price > 3500 ? '#fc8d59' : price > 2000 ? '#fee08b' : '#91cf60'; }
+    // 3- دالة تنسيق شكل الحي
+    function styleFeature(feature) { return { fillColor: getColor(feature.properties.price_m2), weight: 1, color: '#ffffff', fillOpacity: 0.7 }; }
+    let geoLayer, allData;
+    const searchBox = document.getElementById('searchBox');
+    const suggestions = document.getElementById('suggestions');
+    // 4- تحميل ملف الأحياء
+    fetch('districts.geojson').then(r=>r.json()).then(data=>{
+      // 5- أسعار وهمية للتجربة
+      data.features.forEach(f=>{ const fakePrice = 1500 + (parseInt(f.properties.district_id) % 20) * 250 + Math.floor(Math.random()*500); f.properties.price_m2 = fakePrice; });
+      // 6- فلترة الرياض فقط
+      let riyadhOnly = data.features.filter(f => f.properties.city_id == 1);
+      if(riyadhOnly.length > 0) data.features = riyadhOnly;
+      allData = data;
+      // 7- رسم الأحياء
+      geoLayer = L.geoJSON(data, { style: styleFeature, onEachFeature: (feature, layer) => { const name = feature.properties.name_ar || feature.properties.name_en; layer.bindPopup(`<b>${name}</b><br>سعر المتر: ${feature.properties.price_m2} ريال`); } }).addTo(map);
+      map.fitBounds(geoLayer.getBounds());
+      createLegend(); setupSearch();
     });
-
-    // 13- البحث عن حي بالاسم
-    document.getElementById('searchBox').addEventListener('input', e => {
-      const query = e.target.value.trim();
-      if(!query || !allData) return;
-
-      // ندور على حي اسمه فيه الكلمة اللي كتبتها
-      const found = allData.features.find(f => {
-        const nameAr = f.properties.name_ar || '';
-        const nameEn = f.properties.name_en || '';
-        return nameAr.includes(query) || nameEn.toLowerCase().includes(query.toLowerCase());
+    // 8- فلتر السعر
+    document.getElementById('priceFilter').addEventListener('input', e => { const maxPrice = +e.target.value; document.getElementById('priceValue').textContent = maxPrice; if (!geoLayer || !allData) return; const filtered = { ...allData, features: allData.features.filter(f => f.properties.price_m2 <= maxPrice) }; geoLayer.clearLayers(); geoLayer.addData(filtered); });
+    // 9- البحث الذكي - كل حرف تكتبة يطلع مقترحات
+    function setupSearch(){
+      searchBox.addEventListener('input', ()=>{
+        const q = searchBox.value.trim(); if(!q){ suggestions.style.display='none'; return; }
+        const matches = allData.features.filter(f=>{ const ar = (f.properties.name_ar||'').toLowerCase(); const en = (f.properties.name_en||'').toLowerCase(); return ar.includes(q) || en.includes(q.toLowerCase()); }).slice(0,8);
+        if(matches.length===0){ suggestions.style.display='none'; return; }
+        suggestions.innerHTML = matches.map(f=>{ const name = f.properties.name_ar || f.properties.name_en; return `<div class="suggest-item" data-id="${f.properties.district_id}"><b>${name}</b> - ${f.properties.price_m2} ر.س</div>`; }).join('');
+        suggestions.style.display='block';
+        document.querySelectorAll('.suggest-item').forEach(el=>{ el.onclick = ()=>{ const feature = allData.features.find(f=> f.properties.district_id == el.dataset.id); if(feature) filterToDistrict(feature); searchBox.value = el.textContent.split(' -')[0]; suggestions.style.display='none'; }; });
       });
-
-      if(found){
-        // نعمل زوم على الحي اللي لقيناه
-        const bounds = L.geoJSON(found).getBounds();
-        map.fitBounds(bounds, {maxZoom: 14});
-        // نفتح الـ popup بتاعه
-        L.geoJSON(found, {
-          onEachFeature: (f,l) => l.bindPopup(f.properties.name_ar).openPopup()
-        });
-      }
-    });
-
-    // 14- دالة إنشاء المفتاح التفاعلي
-    function createLegend(){
-      const grades = [
-        {label: '< 2000', min: 0, max: 2000, color: '#91cf60'},
-        {label: '2000-3500', min: 2000, max: 3500, color: '#fee08b'},
-        {label: '3500-5000', min: 3500, max: 5000, color: '#fc8d59'},
-        {label: '> 5000', min: 5000, max: 10000, color: '#d73027'},
-      ];
-      const div = document.getElementById('legend');
-      div.innerHTML = '<b>سعر المتر</b><br>';
-      
-      grades.forEach(g => {
-        const item = document.createElement('div');
-        item.innerHTML = `<span style="background:${g.color};width:15px;height:15px;display:inline-block;margin-left:5px;border:1px solid #999"></span> ${g.label}`;
-        // 15- لما تدوس على لون في المفتاح يفلتر الأحياء
-        item.onclick = () => {
-          const filtered = { ...allData, features: allData.features.filter(f => f.properties.price_m2 >= g.min && f.properties.price_m2 < g.max) };
-          geoLayer.clearLayers(); geoLayer.addData(filtered);
-        };
-        div.appendChild(item);
-      });
-
-      // زر عرض الكل
-      const reset = document.createElement('div');
-      reset.innerHTML = '<b style="color:blue;cursor:pointer">عرض الكل</b>';
-      reset.style.marginTop = '8px';
-      reset.style.borderTop = '1px solid #ddd';
-      reset.onclick = () => { geoLayer.clearLayers(); geoLayer.addData(allData); };
-      div.appendChild(reset);
-
-
-
-
+      document.addEventListener('click', (e)=>{ if(!e.target.closest('.search-wrapper')) suggestions.style.display='none'; });
     }
+    // 10- فلتر حي واحد فقط + زووم
+    function filterToDistrict(feature){ geoLayer.clearLayers(); geoLayer.addData(feature); const bounds = L.geoJSON(feature).getBounds(); map.fitBounds(bounds, {maxZoom: 14}); setTimeout(()=>{ geoLayer.eachLayer(l=>{ l.openPopup(); }); },300); }
+    // 11- زر عرض الكل
+    document.getElementById('resetBtn').onclick = ()=>{ searchBox.value=''; suggestions.style.display='none'; document.getElementById('priceFilter').value=10000; document.getElementById('priceValue').textContent=10000; geoLayer.clearLayers(); geoLayer.addData(allData); map.fitBounds(geoLayer.getBounds()); };
+    // 12- المفتاح
+    function createLegend(){ const grades = [{label: '< 2000', min: 0, max: 2000, color: '#91cf60'},{label: '2000-3500', min: 2000, max: 3500, color: '#fee08b'},{label: '3500-5000', min: 3500, max: 5000, color: '#fc8d59'},{label: '> 5000', min: 5000, max: 10000, color: '#d73027'},]; const div = document.getElementById('legend'); div.innerHTML = '<b>سعر المتر</b><br>'; grades.forEach(g=>{ const item = document.createElement('div'); item.innerHTML = `<span style="background:${g.color};width:15px;height:15px;display:inline-block;margin-left:5px;"></span> ${g.label}`; item.onclick = ()=>{ const filtered = { ...allData, features: allData.features.filter(f => f.properties.price_m2 >= g.min && f.properties.price_m2 <= g.max) }; geoLayer.clearLayers(); geoLayer.addData(filtered); }; div.appendChild(item); }); }
   </script>
 </body>
 </html>
