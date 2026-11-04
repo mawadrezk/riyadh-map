@@ -166,19 +166,19 @@
       geoLayer.clearLayers(); geoLayer.addData(allData);
       map.fitBounds(geoLayer.getBounds());
     };
-
-    // 26- إنشاء المفتاح (Legend) ولما تدوس على لون يفلتر
+    // 26- إنشاء المفتاح (Legend) - النسخة المصححة
     function createLegend(){
       const grades = [
-        {label: '< 2000', min: 0, max: 2000, color: '#91cf60'},
-        {label: '2000-3500', min: 2000, max: 3500, color: '#fee08b'},
-        {label: '3500-5000', min: 3500, max: 5000, color: '#fc8d59'},
-        {label: '> 5000', min: 5000, max: 10000, color: '#d73027'},
+        {label: '< 2000 رخيص', min: 0, max: 2000, color: '#91cf60'},
+        {label: '2000 - 3500', min: 2000, max: 3500, color: '#fee08b'},
+        {label: '3500 - 5000', min: 3500, max: 5000, color: '#fc8d59'},
+        {label: '> 5000 غالي', min: 5000, max: 10000, color: '#d73027'},
       ];
       const div = document.getElementById('legend');
       div.innerHTML = '<b>سعر المتر</b><br>';
       grades.forEach(g=>{
         const item = document.createElement('div');
+        // 27- كل لون في المفتاح لما تدوس عليه يفلتر الأحياء حسب سعره
         item.innerHTML = `<span style="background:${g.color};width:15px;height:15px;display:inline-block;margin-left:5px;border:1px solid #999"></span> ${g.label}`;
         item.onclick = ()=>{
           const filtered = { ...allData, features: allData.features.filter(f => f.properties.price_m2 >= g.min && f.properties.price_m2 <= g.max) };
@@ -186,6 +186,11 @@
         };
         div.appendChild(item);
       });
+      // 28- زر إضافي لعرض كل الأحياء
+      const allItem = document.createElement('div');
+      allItem.innerHTML = `<b style="color:#0b57d0; border-top:1px solid #ddd; display:block; margin-top:6px; padding-top:4px;">عرض الكل</b>`;
+      allItem.onclick = ()=>{ geoLayer.clearLayers(); geoLayer.addData(allData); map.fitBounds(geoLayer.getBounds()); };
+      div.appendChild(allItem);
     }
   </script>
 </body>
